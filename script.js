@@ -17,14 +17,17 @@ for (const [key, value] of Object.entries(morseCode)) {
 }
 
 function textToMorse(text) {
-    return text.toUpperCase()
+    // Replace periods with placeholder to avoid conflict with morse dot
+    const textWithPlaceholder = text.replace(/\./g, '§');
+    
+    return textWithPlaceholder.toUpperCase()
         .split('')
         .map(char => {
-            if (morseCode[char]) {
-                return morseCode[char];
-            } else if (char.match(/[.,:;!?'"()-]/)) {
+            if (char.match(/[§,:;!?'"()-]/)) {
                 // Keep punctuation as is
                 return char;
+            } else if (morseCode[char]) {
+                return morseCode[char];
             } else {
                 return '';
             }
@@ -42,9 +45,9 @@ function morseToMomo(morse) {
 
         if (letter === '/') {
             result += ' ';
-        } else if (letter.match(/^[,:;!?'"()]+$/)) {
-            // Keep punctuation as is (but not dots/dashes which are morse code)
-            result += letter;
+        } else if (letter.match(/^[§,:;!?'"()]+$/)) {
+            // Keep punctuation as is, convert placeholder back to period
+            result += letter === '§' ? '.' : letter;
         } else if (letter) {
             // Convert morse to momo: . -> b, - -> l
             const momoLetter = letter.replace(/\./g, 'b').replace(/-/g, 'l');
@@ -75,12 +78,13 @@ function momoToMorse(momo) {
                 currentToken = '';
             }
             tokens.push(' ');
-        } else if (char.match(/[,:;!?'"()-]/)) {
+        } else if (char.match(/[.,:;!?'"()-]/)) {
             if (currentToken) {
                 tokens.push(currentToken);
                 currentToken = '';
             }
-            tokens.push(char);
+            // Convert period back to placeholder for processing
+            tokens.push(char === '.' ? '§' : char);
         } else {
             currentToken += char;
         }
@@ -95,12 +99,11 @@ function momoToMorse(momo) {
     for (const token of tokens) {
         if (token === ' ') {
             result += '/ ';
-        } else if (token.match(/^[,:;!?'"()-]$/)) {
+        } else if (token.match(/^[§,:;!?'"()-]$/)) {
             result += token + ' ';
         } else {
             // Split momo token by uppercase letters (BbbbBBlbb -> [Bbbb, B, Blbb])
             const momoLetters = token.split(/(?=[BL])/).filter(part => part.length > 0);
-            console.log("Momo letters:", token, momoLetters);
 
             for (const momoLetter of momoLetters) {
                 // Convert each momo letter to morse
@@ -120,8 +123,8 @@ function morseToText(morse) {
         const letters = word.split(' ').filter(letter => letter !== '');
 
         const translatedWord = letters.map(letter => {
-            if (letter.match(/^[,:;!?'"()]+$/)) {
-                return letter;
+            if (letter.match(/^[§,:;!?'"()]$/)) {
+                return letter === '§' ? '.' : letter;
             }
             const translated = reverseMorseCode[letter];
             return translated || '';
